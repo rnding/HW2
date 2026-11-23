@@ -3,6 +3,9 @@ package il.ac.tau.cs.software1.bigram;
 import java.io.IOException;
 import java.util.Locale;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+
 public class BigramModel {
     public static final int MAX_VOCABULARY_SIZE = 14500;
     public static final String VOC_FILE_SUFFIX = ".voc";
@@ -79,8 +82,42 @@ public class BigramModel {
      * @post: mBigramCounts = prev(mBigramCounts)
      */
     public String[] buildVocabularyIndex(String fileName) throws IOException { // Question 1
-        // TODO: implement
-        return null;
+        String[] vocab = new String[MAX_VOCABULARY_SIZE];
+        int vocab_index = 0;
+
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(fileName));
+        String line;
+        String[] tokens;
+
+        while ((line = bufferedReader.readLine()) != null)
+        {
+            tokens = line.trim().split("\\s+");
+            for (String token : tokens)
+            {
+                String normazliedToken = normalizeWord(token);
+                if (normazliedToken != null && findIndex(vocab, normazliedToken) == ELEMENT_NOT_FOUND)
+                {
+                    vocab[vocab_index] = normazliedToken;
+                    vocab_index += 1;
+                }
+            }
+        }
+
+        int i = 0;
+        while (i < vocab.length && i < MAX_VOCABULARY_SIZE && vocab[i] != null)
+        {
+            i++;
+        }
+
+        String[] finalVocab = new String[i];
+
+        for (int j=0; j<i; j++)
+        {
+            finalVocab[j] = vocab[i];
+        }
+
+        bufferedReader.close();
+        return finalVocab;
     }
 
     /*
