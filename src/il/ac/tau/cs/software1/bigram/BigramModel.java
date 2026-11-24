@@ -1,10 +1,13 @@
 package il.ac.tau.cs.software1.bigram;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Locale;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 
 public class BigramModel {
     public static final int MAX_VOCABULARY_SIZE = 14500;
@@ -89,22 +92,25 @@ public class BigramModel {
         String line;
         String[] tokens;
 
-        while ((line = bufferedReader.readLine()) != null)
+        while ((line = bufferedReader.readLine()) != null && vocab_index < MAX_VOCABULARY_SIZE)
         {
             tokens = line.trim().split("\\s+");
             for (String token : tokens)
             {
-                String normazliedToken = normalizeWord(token);
-                if (normazliedToken != null && findIndex(vocab, normazliedToken) == ELEMENT_NOT_FOUND)
+                String normalizedToken = normalizeWord(token);
+                if (normalizedToken != null && findIndex(vocab, normalizedToken) == ELEMENT_NOT_FOUND)
                 {
-                    vocab[vocab_index] = normazliedToken;
-                    vocab_index += 1;
+                    if (vocab_index < MAX_VOCABULARY_SIZE)
+                    {
+                        vocab[vocab_index] = normalizedToken;
+                        vocab_index += 1;
+                    }
                 }
             }
         }
 
         int i = 0;
-        while (i < vocab.length && i < MAX_VOCABULARY_SIZE && vocab[i] != null)
+        while (i < vocab.length && vocab[i] != null)
         {
             i++;
         }
@@ -113,7 +119,7 @@ public class BigramModel {
 
         for (int j=0; j<i; j++)
         {
-            finalVocab[j] = vocab[i];
+            finalVocab[j] = vocab[j];
         }
 
         bufferedReader.close();
@@ -125,8 +131,31 @@ public class BigramModel {
      * @post: mBigramCounts = prev(mBigramCounts)
      */
     public int[][] buildCountsArray(String fileName, String[] vocabulary) throws IOException { // Question 2
-        // TODO: implement
-        return null;
+        int[][] bigramCounts = new int[vocabulary.length][vocabulary.length];
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(fileName));
+        String line;
+        String[] tokens;
+
+        while ((line = bufferedReader.readLine()) != null)
+        {
+            tokens = line.trim().split("\\s+");
+            for (int i=0; i<tokens.length-1; i++)
+            {
+                String currentToken = tokens[i];
+                String nextToken = tokens[i+1];
+                String currentNormazliedToken = normalizeWord(currentToken);
+                String nextNormazliedToken = normalizeWord(nextToken);
+                int curIndex = findIndex(vocabulary, currentNormazliedToken);
+                int nextIndex = findIndex(vocabulary, nextNormazliedToken);
+                if (curIndex != ELEMENT_NOT_FOUND && nextIndex != ELEMENT_NOT_FOUND)
+                {
+                    bigramCounts[curIndex][nextIndex]++;
+                }
+            }
+        }
+
+        bufferedReader.close();
+        return bigramCounts;
     }
 
     /*
@@ -134,14 +163,66 @@ public class BigramModel {
      * @pre: fileName is a legal file path
      */
     public void saveModel(String fileName) throws IOException { // Question 3
-        // TODO: implement
+        BufferedWriter vocBufferedWriter = new BufferedWriter(new FileWriter(fileName + VOC_FILE_SUFFIX));
+        vocBufferedWriter.write(this.mVocabulary.length + " " + "words" + "\r\n");
+        
+        for (int i=0; i<this.mVocabulary.length; i++)
+        {
+            vocBufferedWriter.write(i + "," + this.mVocabulary[i] + "\r\n");
+        }
+
+        BufferedWriter countBufferedWriter = new BufferedWriter(new FileWriter(fileName + COUNTS_FILE_SUFFIX));
+
+        for (int i=0; i<this.mBigramCounts.length; i++)
+        {
+            for (int j=0; j<this.mBigramCounts[0].length; j++)
+            {
+                if (this.mBigramCounts[i][j] != 0)
+                {
+                    countBufferedWriter.write(i + "," + j + ":" + this.mBigramCounts[i][j] + "\r\n");
+                }
+            }
+        }
+
+        vocBufferedWriter.close();
+        countBufferedWriter.close();
     }
 
     /*
      * @pre: fileName is a legal file path
      */
     public void loadModel(String fileName) throws IOException { // Question 4
-        // TODO: implement
+        BufferedReader vocBufferedReader = new BufferedReader(new FileReader(fileName + VOC_FILE_SUFFIX));
+        String line;
+        String[] tokens;
+
+        tokens = vocBufferedReader.readLine().split(" ");
+        int wordsCount = Integer.parseInt(tokens[0]);
+
+        String[] vocabulary = new String[wordsCount];
+
+        while ((line = vocBufferedReader.readLine()) != null)
+        {
+            tokens = line.split(",");
+            vocabulary[Integer.parseInt(tokens[0])] = tokens[1];
+        }
+
+        BufferedReader bigramBufferedReader = new BufferedReader(new FileReader(fileName + COUNTS_FILE_SUFFIX));
+        int[][] bigramCounts = new int[wordsCount][wordsCount];
+        String[] indices;
+
+        while ((line = bigramBufferedReader.readLine()) != null)
+        {
+            tokens = line.split(":");
+            indices = tokens[0].split(",");
+            bigramCounts[Integer.parseInt(indices[0])][Integer.parseInt(indices[1])] = Integer.parseInt(tokens[1]);
+        }
+
+        this.mVocabulary = vocabulary;
+        this.mBigramCounts = bigramCounts;
+
+        vocBufferedReader.close();
+        bigramBufferedReader.close();
     }
 
     /*
@@ -151,8 +232,33 @@ public class BigramModel {
      * @post: if sentence is probable, according to the model, $ret = true, else, $ret = false
      */
     public boolean isLegalSentence(String sentence) { // Question 5
-        // TODO: implement
-        return false;
+        String[] tokens = sentence.split(" ");
+        if (tokens.length == 0)
+        {
+            return true;
+        }
+        if (tokens.length == 1 && findIndex(this.mVocabulary, tokens[0]) != ELEMENT_NOT_FOUND)
+        {
+            return true;
+        }
+        
+        for (int i=0; i<tokens.length-1; i++)
+        {
+            String currentToken = tokens[i];
+            String nextToken = tokens[i+1];
+            int currentTokenIndex = findIndex(this.mVocabulary, currentToken);
+            int nextTokenIndex = findIndex(this.mVocabulary, nextToken);
+            if (currentTokenIndex == ELEMENT_NOT_FOUND || nextTokenIndex == ELEMENT_NOT_FOUND)
+            {
+                return false;
+            }
+            if (this.mBigramCounts[currentTokenIndex][nextTokenIndex] == 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     ///////////////////////////////////////////////////////////////////////////
