@@ -5,10 +5,10 @@ package il.ac.tau.cs.software1.inventory;
  */
 public class NaiveInventory implements Inventory {
 
-	private static final int INITIAL_CAPACITY = 5;
+	private static final int INITIAL_CAPACITY = 100;
 
-	Collectible[] collectibles;
-	int collectiblesCount;
+	private Collectible[] collectibles;
+	private int collectiblesCount;
 	//       - an array of Collectibles (it may be larger than the number of items actually stored)
 	//       - an int that counts how many items are actually stored
 
