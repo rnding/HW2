@@ -5,7 +5,7 @@ package il.ac.tau.cs.software1.inventory;
  */
 public class NaiveInventory implements Inventory {
 
-	private static final int INITIAL_CAPACITY = 100;
+	private static final int INITIAL_CAPACITY = 5;
 
 	Collectible[] collectibles;
 	int collectiblesCount;
@@ -25,7 +25,7 @@ public class NaiveInventory implements Inventory {
 		}
 		else
 		{
-			Collectible[] newCollectibles = new Collectible[this.collectibles.length];
+			Collectible[] newCollectibles = new Collectible[this.collectibles.length * 2];
 			for (int i=0; i<collectiblesCount; i++)
 			{
 				newCollectibles[i] = this.collectibles[i];
